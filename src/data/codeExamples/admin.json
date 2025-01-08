@@ -1,0 +1,109 @@
+{
+  "categories": {
+    "Configuración de Brokers": {
+      "description": "Configuraciones esenciales para brokers Kafka",
+      "subcategories": {
+        "Configuraciones Básicas": {
+          "description": "Configuraciones fundamentales del broker",
+          "examples": {
+            "properties": {
+              "language": "Properties",
+              "code": "# Configuración básica del broker\nbroker.id=0\nlisteners=PLAINTEXT://localhost:9092\nadvertised.listeners=PLAINTEXT://localhost:9092\nnum.network.threads=3\nnum.io.threads=8\nsocket.send.buffer.bytes=102400\nsocket.receive.buffer.bytes=102400\nsocket.request.max.bytes=104857600\nlog.dirs=/var/lib/kafka/data\nnum.partitions=3\nnum.recovery.threads.per.data.dir=1\noffsets.topic.replication.factor=1\ntransaction.state.log.replication.factor=1\ntransaction.state.log.min.isr=1\nlog.retention.hours=168\nlog.segment.bytes=1073741824\nlog.retention.check.interval.ms=300000\nzookeeper.connect=localhost:2181\nzookeeper.connection.timeout.ms=18000",
+              "explanation": "Configuración básica de un broker Kafka incluyendo networking, almacenamiento y ZooKeeper."
+            },
+            "bash": {
+              "language": "Bash",
+              "code": "#!/bin/bash\n\n# Crear directorios necesarios\nmkdir -p /var/lib/kafka/data\nchown -R kafka:kafka /var/lib/kafka\n\n# Configurar variables de entorno\nexport KAFKA_HEAP_OPTS=\"-Xmx1G -Xms1G\"\nexport KAFKA_JVM_PERFORMANCE_OPTS=\"-server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=true\"\n\n# Iniciar el broker\nbin/kafka-server-start.sh config/server.properties",
+              "explanation": "Comandos para preparar y arrancar un broker Kafka con configuraciones de JVM optimizadas."
+            }
+          }
+        },
+        "Configuraciones de Rendimiento": {
+          "description": "Optimizaciones de rendimiento para brokers",
+          "examples": {
+            "properties": {
+              "language": "Properties",
+              "code": "# Configuraciones de rendimiento\nnum.network.threads=8\nnum.io.threads=16\nnum.replica.fetchers=4\nnum.recovery.threads.per.data.dir=2\nbackground.threads=20\nqueued.max.requests=1000\nsocket.send.buffer.bytes=1048576\nsocket.receive.buffer.bytes=1048576\nsocket.request.max.bytes=104857600\nmax.connections.per.ip=100000\nmax.connections.per.ip.overrides=\nconnections.max.idle.ms=600000\nnum.replica.alter.log.dirs.threads=4\nlog.flush.interval.messages=10000\nlog.flush.interval.ms=1000\nlog.flush.scheduler.interval.ms=1000\nlog.roll.hours=168\nlog.retention.bytes=1073741824\nlog.cleaner.threads=2\nlog.cleaner.dedupe.buffer.size=134217728",
+              "explanation": "Configuraciones optimizadas para alto rendimiento en brokers con tráfico intenso."
+            },
+            "bash": {
+              "language": "Bash",
+              "code": "#!/bin/bash\n\n# Optimizar sistema operativo para Kafka\nsysctl -w vm.swappiness=1\nsysctl -w vm.dirty_background_ratio=5\nsysctl -w vm.dirty_ratio=80\nsysctl -w net.core.rmem_max=16777216\nsysctl -w net.core.wmem_max=16777216\nsysctl -w net.core.rmem_default=262144\nsysctl -w net.core.wmem_default=262144\nsysctl -w net.ipv4.tcp_max_syn_backlog=8096\nsysctl -w net.core.netdev_max_backlog=16384\nsysctl -w net.ipv4.tcp_slow_start_after_idle=0\nsysctl -w net.ipv4.tcp_tw_reuse=1\n\n# Configurar límites de archivos\necho \"* hard nofile 100000\" >> /etc/security/limits.conf\necho \"* soft nofile 100000\" >> /etc/security/limits.conf\necho \"* hard nproc 32768\" >> /etc/security/limits.conf\necho \"* soft nproc 32768\" >> /etc/security/limits.conf",
+              "explanation": "Configuraciones a nivel de sistema operativo para optimizar el rendimiento de Kafka."
+            }
+          }
+        },
+        "Configuraciones de Seguridad": {
+          "description": "Configuraciones de seguridad para brokers",
+          "examples": {
+            "properties": {
+              "language": "Properties",
+              "code": "# Configuraciones de seguridad SSL/TLS\nlisteners=PLAINTEXT://localhost:9092,SSL://localhost:9093\nssl.keystore.location=/var/private/kafka.server.keystore.jks\nssl.keystore.password=test1234\nssl.key.password=test1234\nssl.truststore.location=/var/private/kafka.server.truststore.jks\nssl.truststore.password=test1234\nssl.client.auth=required\nssl.enabled.protocols=TLSv1.2,TLSv1.3\nssl.keystore.type=JKS\nssl.truststore.type=JKS\nssl.endpoint.identification.algorithm=HTTPS\n\n# Configuraciones SASL\nsasl.enabled.mechanisms=PLAIN,SCRAM-SHA-256,SCRAM-SHA-512\nsasl.mechanism.inter.broker.protocol=PLAIN\nlisteners=SASL_SSL://localhost:9093\nsecurity.inter.broker.protocol=SASL_SSL\nsasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
+              "explanation": "Configuraciones de seguridad incluyendo SSL/TLS y SASL para autenticación y encriptación."
+            },
+            "bash": {
+              "language": "Bash",
+              "code": "#!/bin/bash\n\n# Generar certificados SSL\nkeytool -keystore kafka.server.keystore.jks -alias localhost -validity 365 -genkey -keyalg RSA -storepass test1234 -keypass test1234 -dname \"CN=localhost, OU=IT, O=Company, L=City, S=State, C=US\"\n\n# Exportar certificado\nkeytool -keystore kafka.server.keystore.jks -alias localhost -certreq -file cert-file -storepass test1234\n\n# Crear truststore\nkeytool -keystore kafka.server.truststore.jks -alias CARoot -import -file ca-cert -storepass test1234\n\n# Configurar SASL\ncat > kafka_server_jaas.conf << EOF\nKafkaServer {\n    org.apache.kafka.common.security.plain.PlainLoginModule required\n    username=\"admin\"\n    password=\"admin-secret\"\n    user_admin=\"admin-secret\";\n};\nClient {\n    org.apache.kafka.common.security.plain.PlainLoginModule required\n    username=\"admin\"\n    password=\"admin-secret\";\n};\nEOF\n\nexport KAFKA_OPTS=\"-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf\"",
+              "explanation": "Comandos para configurar seguridad SSL/TLS y SASL en Kafka."
+            }
+          }
+        },
+        "Configuraciones de Almacenamiento": {
+          "description": "Configuraciones de almacenamiento y retención",
+          "examples": {
+            "properties": {
+              "language": "Properties",
+              "code": "# Configuraciones de almacenamiento\nlog.dirs=/data/kafka-logs-1,/data/kafka-logs-2,/data/kafka-logs-3\nlog.retention.hours=168\nlog.retention.bytes=1073741824\nlog.segment.bytes=1073741824\nlog.retention.check.interval.ms=300000\nlog.cleaner.enable=true\nlog.cleaner.threads=2\nlog.cleaner.dedupe.buffer.size=134217728\nlog.cleaner.io.max.bytes.per.second=1073741824\nlog.cleaner.backoff.ms=15000\nlog.cleaner.min.cleanable.ratio=0.5\nlog.cleanup.policy=delete\nlog.index.size.max.bytes=10485760\nlog.index.interval.bytes=4096\nlog.preallocate=true\nlog.message.timestamp.type=CreateTime\nlog.message.timestamp.difference.max.ms=9223372036854775807",
+              "explanation": "Configuraciones detalladas para gestión de almacenamiento y retención de logs."
+            },
+            "bash": {
+              "language": "Bash",
+              "code": "#!/bin/bash\n\n# Crear directorios de logs\nfor i in {1..3}; do\n  mkdir -p /data/kafka-logs-$i\n  chown -R kafka:kafka /data/kafka-logs-$i\n  chmod 750 /data/kafka-logs-$i\ndone\n\n# Montar volúmenes para logs\nmount -t xfs /dev/nvme1n1 /data/kafka-logs-1\nmount -t xfs /dev/nvme2n1 /data/kafka-logs-2\nmount -t xfs /dev/nvme3n1 /data/kafka-logs-3\n\n# Configurar fstab para montaje automático\necho \"/dev/nvme1n1 /data/kafka-logs-1 xfs defaults,noatime 0 0\" >> /etc/fstab\necho \"/dev/nvme2n1 /data/kafka-logs-2 xfs defaults,noatime 0 0\" >> /etc/fstab\necho \"/dev/nvme3n1 /data/kafka-logs-3 xfs defaults,noatime 0 0\" >> /etc/fstab\n\n# Configurar permisos y propietario\nchown -R kafka:kafka /data/kafka-logs-*\nchmod -R 750 /data/kafka-logs-*",
+              "explanation": "Comandos para preparar y configurar almacenamiento distribuido para Kafka."
+            }
+          }
+        }
+      }
+    },
+    "Configuración de Topics": {
+      "description": "Configuraciones para gestión de topics",
+      "subcategories": {
+        "Creación y Configuración": {
+          "description": "Configuraciones para creación y gestión de topics",
+          "examples": {
+            "properties": {
+              "language": "Properties",
+              "code": "# Configuraciones por defecto para topics\nnum.partitions=3\ndefault.replication.factor=3\nmin.insync.replicas=2\ncompression.type=producer\ncleanup.policy=delete\ndelete.retention.ms=86400000\nfile.delete.delay.ms=60000\nflush.messages=10000\nflush.ms=1000\nindex.interval.bytes=4096\nmax.message.bytes=1000012\nmessage.timestamp.difference.max.ms=9223372036854775807\nmessage.timestamp.type=CreateTime\npreallocate=false\nretention.bytes=-1\nretention.ms=604800000\nsegment.bytes=1073741824\nsegment.index.bytes=10485760\nsegment.jitter.ms=0\nsegment.ms=604800000",
+              "explanation": "Configuraciones detalladas para la creación y comportamiento de topics."
+            },
+            "bash": {
+              "language": "Bash",
+              "code": "#!/bin/bash\n\n# Crear topic con configuraciones específicas\nkafka-topics.sh --create \\\n  --bootstrap-server localhost:9092 \\\n  --topic mi-topic \\\n  --partitions 3 \\\n  --replication-factor 3 \\\n  --config cleanup.policy=compact \\\n  --config min.cleanable.dirty.ratio=0.01 \\\n  --config segment.bytes=1073741824\n\n# Modificar configuraciones de topic\nkafka-configs.sh --bootstrap-server localhost:9092 \\\n  --entity-type topics \\\n  --entity-name mi-topic \\\n  --alter \\\n  --add-config retention.ms=86400000,max.message.bytes=1048576\n\n# Listar topics y sus configuraciones\nkafka-topics.sh --bootstrap-server localhost:9092 --describe\n\n# Aumentar particiones\nkafka-topics.sh --bootstrap-server localhost:9092 \\\n  --alter \\\n  --topic mi-topic \\\n  --partitions 6",
+              "explanation": "Comandos para crear y gestionar topics con configuraciones específicas."
+            }
+          }
+        }
+      }
+    },
+    "Monitoreo y Mantenimiento": {
+      "description": "Configuraciones para monitoreo y mantenimiento",
+      "subcategories": {
+        "Métricas y Monitoreo": {
+          "description": "Configuraciones para métricas y monitoreo",
+          "examples": {
+            "properties": {
+              "language": "Properties",
+              "code": "# Configuraciones de métricas JMX\nkafka.metrics.polling.interval.secs=10\nkafka.metrics.reporters=org.apache.kafka.common.metrics.JmxReporter\nkafka.metrics.recording.level=INFO\n\n# Configuraciones de logs\nlog4j.rootLogger=INFO, stdout, kafkaAppender\n\nlog4j.appender.stdout=org.apache.log4j.ConsoleAppender\nlog4j.appender.stdout.layout=org.apache.log4j.PatternLayout\nlog4j.appender.stdout.layout.ConversionPattern=[%d] %p %m (%c)%n\n\nlog4j.appender.kafkaAppender=org.apache.log4j.DailyRollingFileAppender\nlog4j.appender.kafkaAppender.DatePattern='.'yyyy-MM-dd-HH\nlog4j.appender.kafkaAppender.File=/var/log/kafka/server.log\nlog4j.appender.kafkaAppender.layout=org.apache.log4j.PatternLayout\nlog4j.appender.kafkaAppender.layout.ConversionPattern=[%d] %p %m (%c)%n\n\n# Configuraciones de monitoreo de rendimiento\nkafka.metrics.reporters=org.apache.kafka.common.metrics.JmxReporter\nkafka.metrics.polling.interval.secs=10\nkafka.metrics.recording.level=INFO",
+              "explanation": "Configuraciones para habilitar y gestionar métricas y logs en Kafka."
+            },
+            "bash": {
+              "language": "Bash",
+              "code": "#!/bin/bash\n\n# Configurar JMX para monitoreo remoto\nexport JMX_PORT=9999\nexport KAFKA_JMX_OPTS=\"-Dcom.sun.management.jmxremote \\\n  -Dcom.sun.management.jmxremote.authenticate=false \\\n  -Dcom.sun.management.jmxremote.ssl=false \\\n  -Dcom.sun.management.jmxremote.port=$JMX_PORT\"\n\n# Configurar rotación de logs\ncat > /etc/logrotate.d/kafka << EOF\n/var/log/kafka/*.log {\n    daily\n    missingok\n    rotate 7\n    compress\n    delaycompress\n    notifempty\n    create 640 kafka kafka\n    sharedscripts\n    postrotate\n        kill -HUP `cat /var/run/kafka/kafka.pid 2>/dev/null` 2>/dev/null || true\n    endscript\n}\nEOF\n\n# Monitorear métricas con jconsole\njconsole localhost:9999\n\n# Recolectar métricas con JMX\njava -jar jmxterm-1.0.2-uber.jar --url service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi",
+              "explanation": "Comandos para configurar y gestionar monitoreo y logs en Kafka."
+            }
+          }
+        }
+      }
+    }
+  }
+} 

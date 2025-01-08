@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id            Int      @id @default(autoincrement())
+  content       String
+  optionsJson   String   // JSON string of options array
+  correctAnswer Int      // Index of correct answer in options array
+  explanation   String?
+  topic         String?
+  subtopicsJson String?  // JSON string of subtopics array
+  category      String   // "administrator" or "developer"
+  certification String   // "Confluent Kafka Administrator" or "Confluent Kafka Developer"
+  importance    Int      @default(1)
+  answer        String?  // The correct answer text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model UserProgress {
+  id              Int      @id @default(autoincrement())
+  questionId      Int
+  lastReviewDate  DateTime
+  nextReviewDate  DateTime
+  successRate     Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CodeExample {
+  id            String   @id @default(cuid())
+  type          String   // 'admin' o 'developer'
+  certification String   // 'CCDAK' o 'CCAK'
+  category      String   // Nombre de la categoría principal
+  subcategory   String   // Nombre de la subcategoría
+  language      String   // Lenguaje del ejemplo
+  code          String   // Código del ejemplo
+  explanation   String   // Explicación del ejemplo
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([type, category, subcategory, language])
+} 

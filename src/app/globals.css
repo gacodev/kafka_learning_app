@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colores principales */
+  --primary: #2563eb;     /* Azul royal - Confianza y profesionalismo */
+  --secondary: #0ea5e9;   /* Azul cielo - Claridad mental y frescura */
+  --accent: #8b5cf6;      /* Púrpura - Creatividad y sabiduría */
+  
+  /* Colores de fondo */
+  --background: #f8fafc;  /* Blanco humo - Limpieza y claridad */
+  --card-bg: #ffffff;     /* Blanco puro - Pureza y simplicidad */
+  
+  /* Colores de texto */
+  --text-primary: #1e293b;   /* Azul oscuro - Legibilidad */
+  --text-secondary: #475569; /* Gris azulado - Información secundaria */
+  
+  /* Colores de estado */
+  --success: #22c55e;     /* Verde - Éxito y progreso */
+  --error: #ef4444;       /* Rojo - Errores y alertas */
+  --warning: #f59e0b;     /* Naranja - Advertencias */
+  
+  /* Colores de categorías */
+  --admin: #0891b2;       /* Azul verdoso - Administración */
+  --dev: #8b5cf6;         /* Púrpura - Desarrollo */
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--background);
+  font-family: 'Inter', sans-serif;
+}

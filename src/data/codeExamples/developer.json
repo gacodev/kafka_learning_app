@@ -1,0 +1,279 @@
+{
+  "categories": {
+    "Productores": {
+      "description": "Implementaciones de productores Kafka",
+      "subcategories": {
+        "Productor Básico": {
+          "description": "Implementación básica de productores",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.clients.producer.*;\nimport java.util.Properties;\n\npublic class SimpleProducer {\n    public static void main(String[] args) {\n        Properties props = new Properties();\n        props.put(\"bootstrap.servers\", \"localhost:9092\");\n        props.put(\"key.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\n        props.put(\"value.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\n        props.put(\"acks\", \"all\");\n\n        Producer<String, String> producer = new KafkaProducer<>(props);\n        ProducerRecord<String, String> record = new ProducerRecord<>(\"test-topic\", \"key\", \"value\");\n\n        producer.send(record, (metadata, exception) -> {\n            if (exception == null) {\n                System.out.printf(\"Topic: %s, Partition: %d, Offset: %d%n\",\n                    metadata.topic(), metadata.partition(), metadata.offset());\n            }\n        });\n\n        producer.flush();\n        producer.close();\n    }",
+              "explanation": "Productor básico en Java con configuraciones esenciales."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaProducer\nimport json\n\nproducer = KafkaProducer(\n    bootstrap_servers=['localhost:9092'],\n    value_serializer=lambda v: json.dumps(v).encode('utf-8')\n)\n\nfuture = producer.send('test-topic', {'message': 'Hello Kafka!'})\ntry:\n    record_metadata = future.get(timeout=10)\n    print(f'Topic: {record_metadata.topic}')\n    print(f'Partition: {record_metadata.partition}')\n    print(f'Offset: {record_metadata.offset}')\nexcept Exception as e:\n    print(f'Error: {e}')\n\nproducer.flush()\nproducer.close()",
+              "explanation": "Productor simple en Python con serialización JSON."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { Kafka } = require('kafkajs')\n\nconst kafka = new Kafka({\n  clientId: 'my-producer',\n  brokers: ['localhost:9092']\n})\n\nconst producer = kafka.producer()\n\nasync function sendMessage() {\n  await producer.connect()\n  \n  try {\n    await producer.send({\n      topic: 'test-topic',\n      messages: [\n        { key: 'key1', value: 'Hello KafkaJS!' }\n      ],\n    })\n  } catch (err) {\n    console.error('Error:', err)\n  } finally {\n    await producer.disconnect()\n  }\n}\n\nsendMessage()",
+              "explanation": "Productor básico usando KafkaJS con async/await."
+            }
+          }
+        },
+        "Productor con Serialización Personalizada": {
+          "description": "Implementación de productores con serialización personalizada",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.common.serialization.Serializer;\nimport com.fasterxml.jackson.databind.ObjectMapper;\n\npublic class CustomSerializer implements Serializer<Customer> {\n    private final ObjectMapper objectMapper = new ObjectMapper();\n\n    @Override\n    public byte[] serialize(String topic, Customer data) {\n        try {\n            return objectMapper.writeValueAsBytes(data);\n        } catch (Exception e) {\n            throw new RuntimeException(\"Error serializing Customer\", e);\n        }\n    }\n}\n\n// Uso del serializador\nProperties props = new Properties();\nprops.put(\"key.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\nprops.put(\"value.serializer\", \"com.example.CustomSerializer\");\n\nProducer<String, Customer> producer = new KafkaProducer<>(props);\nCustomer customer = new Customer(\"John\", \"Doe\", \"john@example.com\");\nProducerRecord<String, Customer> record = new ProducerRecord<>(\"customers\", customer.getId(), customer);",
+              "explanation": "Implementación de serialización personalizada para objetos Customer en Java."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaProducer\nimport json\nfrom dataclasses import dataclass\nfrom typing import Any\n\n@dataclass\nclass Customer:\n    id: str\n    name: str\n    email: str\n\nclass CustomerSerializer:\n    def __call__(self, customer: Customer) -> bytes:\n        return json.dumps({\n            'id': customer.id,\n            'name': customer.name,\n            'email': customer.email\n        }).encode('utf-8')\n\nproducer = KafkaProducer(\n    bootstrap_servers=['localhost:9092'],\n    value_serializer=CustomerSerializer()\n)\n\ncustomer = Customer('1', 'John Doe', 'john@example.com')\nproducer.send('customers', customer)",
+              "explanation": "Serialización personalizada de objetos Customer en Python."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { Kafka } = require('kafkajs')\n\nclass Customer {\n  constructor(id, name, email) {\n    this.id = id\n    this.name = name\n    this.email = email\n  }\n}\n\nclass CustomerSerializer {\n  serialize(customer) {\n    return JSON.stringify({\n      id: customer.id,\n      name: customer.name,\n      email: customer.email\n    })\n  }\n}\n\nconst kafka = new Kafka({\n  clientId: 'customer-producer',\n  brokers: ['localhost:9092']\n})\n\nconst producer = kafka.producer()\nconst serializer = new CustomerSerializer()\n\nasync function sendCustomer() {\n  await producer.connect()\n  \n  const customer = new Customer('1', 'John Doe', 'john@example.com')\n  \n  try {\n    await producer.send({\n      topic: 'customers',\n      messages: [{\n        key: customer.id,\n        value: serializer.serialize(customer)\n      }]\n    })\n  } finally {\n    await producer.disconnect()\n  }\n}",
+              "explanation": "Serialización personalizada de objetos Customer en JavaScript."
+            }
+          }
+        },
+        "Productor con Particionamiento Personalizado": {
+          "description": "Implementación de productores con estrategias de particionamiento personalizadas",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.clients.producer.Partitioner;\nimport org.apache.kafka.common.Cluster;\n\npublic class CustomPartitioner implements Partitioner {\n    @Override\n    public int partition(String topic, Object key, byte[] keyBytes,\n                        Object value, byte[] valueBytes, Cluster cluster) {\n        int numPartitions = cluster.partitionCountForTopic(topic);\n        if (key == null) {\n            return (int) (System.currentTimeMillis() % numPartitions);\n        }\n        // Particionamiento basado en hash del key\n        return Math.abs(key.hashCode() % numPartitions);\n    }\n\n    @Override\n    public void close() {}\n\n    @Override\n    public void configure(Map<String, ?> configs) {}\n}\n\n// Uso del particionador\nProperties props = new Properties();\nprops.put(\"partitioner.class\", \"com.example.CustomPartitioner\");\nProducer<String, String> producer = new KafkaProducer<>(props);",
+              "explanation": "Implementación de particionador personalizado en Java."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka.partitioner import Partitioner\nimport mmh3  # MurmurHash3\n\nclass CustomPartitioner(Partitioner):\n    def __init__(self):\n        self._murmur = mmh3.hash\n\n    def __call__(self, key_bytes, all_partitions, available):\n        if key_bytes is None:\n            return self._next_available(available)\n\n        # Usar MurmurHash3 para mejor distribución\n        idx = self._murmur(key_bytes) % len(all_partitions)\n        return all_partitions[idx]\n\n    def _next_available(self, partitions):\n        return partitions[0]\n\nproducer = KafkaProducer(\n    bootstrap_servers=['localhost:9092'],\n    partitioner=CustomPartitioner()\n)",
+              "explanation": "Particionador personalizado usando MurmurHash3 en Python."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { Kafka } = require('kafkajs')\nconst murmurhash = require('murmurhash')\n\nclass CustomPartitioner {\n  constructor() {\n    this.partitionCount = null\n  }\n\n  partition({ topic, partitionMetadata, message }) {\n    const numPartitions = partitionMetadata.length\n    const key = message.key\n\n    if (!key) {\n      return Math.floor(Math.random() * numPartitions)\n    }\n\n    // Usar MurmurHash para mejor distribución\n    return Math.abs(murmurhash.v3(key)) % numPartitions\n  }\n}\n\nconst kafka = new Kafka({\n  clientId: 'custom-partitioner-producer',\n  brokers: ['localhost:9092']\n})\n\nconst producer = kafka.producer({\n  createPartitioner: () => new CustomPartitioner()\n})",
+              "explanation": "Particionador personalizado usando MurmurHash en JavaScript."
+            }
+          }
+        },
+        "Productor con Compresión": {
+          "description": "Implementación de productores con compresión de mensajes",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "Properties props = new Properties();\nprops.put(\"bootstrap.servers\", \"localhost:9092\");\nprops.put(\"key.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\nprops.put(\"value.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\nprops.put(\"compression.type\", \"gzip\"); // Opciones: none, gzip, snappy, lz4, zstd\nprops.put(\"batch.size\", 32768); // Aumentar para mejor compresión\nprops.put(\"linger.ms\", 20); // Esperar más tiempo para acumular mensajes\n\nProducer<String, String> producer = new KafkaProducer<>(props);\n\n// Los mensajes se comprimirán automáticamente en lotes\nfor (int i = 0; i < 100; i++) {\n    producer.send(new ProducerRecord<>(\"compressed-topic\", \n        \"key-\" + i, \"value-\" + i));\n}",
+              "explanation": "Productor con compresión GZIP y configuración optimizada para lotes."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaProducer\n\nproducer = KafkaProducer(\n    bootstrap_servers=['localhost:9092'],\n    compression_type='gzip',  # Opciones: None, 'gzip', 'snappy', 'lz4', 'zstd'\n    batch_size=32768,\n    linger_ms=20\n)\n\n# Los mensajes se comprimirán automáticamente\nfor i in range(100):\n    producer.send('compressed-topic', \n        key=f'key-{i}'.encode(),\n        value=f'value-{i}'.encode()\n    )",
+              "explanation": "Productor Python con compresión GZIP y configuración de lotes."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { CompressionTypes, Kafka } = require('kafkajs')\n\nconst kafka = new Kafka({\n  clientId: 'compressed-producer',\n  brokers: ['localhost:9092']\n})\n\nconst producer = kafka.producer({\n  createPartitioner: Partitioners.LegacyPartitioner,\n  compression: CompressionTypes.GZIP, // GZIP, None, SNAPPY, LZ4\n  batchSize: 32768,\n  lingerMs: 20\n})\n\nasync function sendCompressedMessages() {\n  await producer.connect()\n  \n  const messages = Array.from({ length: 100 }, (_, i) => ({\n    key: `key-${i}`,\n    value: `value-${i}`\n  }))\n\n  await producer.send({\n    topic: 'compressed-topic',\n    messages\n  })\n}",
+              "explanation": "Productor JavaScript con compresión GZIP y envío en lotes."
+            }
+          }
+        },
+        "Productor con Interceptores": {
+          "description": "Implementación de productores con interceptores para monitoreo",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "public class MetricsInterceptor implements ProducerInterceptor<String, String> {\n    private final AtomicLong successCount = new AtomicLong();\n    private final AtomicLong errorCount = new AtomicLong();\n\n    @Override\n    public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {\n        // Agregar timestamp como header\n        record.headers().add(\"timestamp\", \n            String.valueOf(System.currentTimeMillis()).getBytes());\n        return record;\n    }\n\n    @Override\n    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {\n        if (exception == null) {\n            successCount.incrementAndGet();\n        } else {\n            errorCount.incrementAndGet();\n        }\n    }\n\n    @Override\n    public void close() {\n        System.out.printf(\"Métricas finales - Éxitos: %d, Errores: %d%n\", \n            successCount.get(), errorCount.get());\n    }\n}\n\n// Uso del interceptor\nProperties props = new Properties();\nprops.put(\"interceptor.classes\", MetricsInterceptor.class.getName());\nProducer<String, String> producer = new KafkaProducer<>(props);",
+              "explanation": "Interceptor para recolectar métricas de mensajes enviados y fallidos."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaProducer\nfrom kafka.producer.future import FutureRecordMetadata\nfrom typing import Any, Dict\n\nclass MetricsInterceptor:\n    def __init__(self):\n        self.success_count = 0\n        self.error_count = 0\n\n    def on_send(self, record: Dict[str, Any]) -> Dict[str, Any]:\n        # Agregar timestamp\n        if 'headers' not in record:\n            record['headers'] = []\n        record['headers'].append(\n            ('timestamp', str(time.time()).encode())\n        )\n        return record\n\n    def on_acknowledgement(self, err: Any, metadata: FutureRecordMetadata):\n        if err is None:\n            self.success_count += 1\n        else:\n            self.error_count += 1\n\n    def close(self):\n        print(f'Métricas finales - Éxitos: {self.success_count}, '\n              f'Errores: {self.error_count}')\n\n# Uso del interceptor\ninterceptor = MetricsInterceptor()\nproducer = KafkaProducer(\n    bootstrap_servers=['localhost:9092'],\n    value_serializer=str.encode,\n    on_delivery=interceptor.on_acknowledgement\n)",
+              "explanation": "Interceptor en Python para monitorear envíos exitosos y fallidos."
+            }
+          }
+        }
+      }
+    },
+    "Consumidores": {
+      "description": "Implementaciones de consumidores Kafka",
+      "subcategories": {
+        "Consumidor Básico": {
+          "description": "Implementación básica de consumidores",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.clients.consumer.*;\nimport java.time.Duration;\nimport java.util.*;\n\npublic class SimpleConsumer {\n    public static void main(String[] args) {\n        Properties props = new Properties();\n        props.put(\"bootstrap.servers\", \"localhost:9092\");\n        props.put(\"group.id\", \"test-group\");\n        props.put(\"key.deserializer\", \"org.apache.kafka.common.serialization.StringDeserializer\");\n        props.put(\"value.deserializer\", \"org.apache.kafka.common.serialization.StringDeserializer\");\n        props.put(\"auto.offset.reset\", \"earliest\");\n\n        Consumer<String, String> consumer = new KafkaConsumer<>(props);\n        consumer.subscribe(Arrays.asList(\"test-topic\"));\n\n        try {\n            while (true) {\n                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));\n                for (ConsumerRecord<String, String> record : records) {\n                    System.out.printf(\"offset = %d, key = %s, value = %s%n\",\n                        record.offset(), record.key(), record.value());\n                }\n            }\n        } finally {\n            consumer.close();\n        }\n    }",
+              "explanation": "Consumidor básico en Java con manejo de registros."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaConsumer\nimport json\n\nconsumer = KafkaConsumer(\n    'test-topic',\n    bootstrap_servers=['localhost:9092'],\n    group_id='test-group',\n    auto_offset_reset='earliest',\n    value_deserializer=lambda m: json.loads(m.decode('utf-8'))\n)\n\ntry:\n    for message in consumer:\n        print(f'Topic: {message.topic}')\n        print(f'Partition: {message.partition}')\n        print(f'Offset: {message.offset}')\n        print(f'Key: {message.key}')\n        print(f'Value: {message.value}')\nexcept KeyboardInterrupt:\n    pass\nfinally:\n    consumer.close()",
+              "explanation": "Consumidor básico en Python con deserialización JSON."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { Kafka } = require('kafkajs')\n\nconst kafka = new Kafka({\n  clientId: 'my-consumer',\n  brokers: ['localhost:9092']\n})\n\nconst consumer = kafka.consumer({ groupId: 'test-group' })\n\nasync function consume() {\n  await consumer.connect()\n  await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })\n\n  await consumer.run({\n    eachMessage: async ({ topic, partition, message }) => {\n      console.log({\n        topic,\n        partition,\n        offset: message.offset,\n        key: message.key?.toString(),\n        value: message.value?.toString()\n      })\n    },\n  })\n}\n\nconsume().catch(console.error)",
+              "explanation": "Consumidor básico usando KafkaJS con async/await."
+            }
+          }
+        },
+        "Consumidor con Deserialización Personalizada": {
+          "description": "Implementación de consumidores con deserialización personalizada",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.common.serialization.Deserializer;\nimport com.fasterxml.jackson.databind.ObjectMapper;\n\npublic class CustomerDeserializer implements Deserializer<Customer> {\n    private final ObjectMapper objectMapper = new ObjectMapper();\n\n    @Override\n    public Customer deserialize(String topic, byte[] data) {\n        try {\n            return objectMapper.readValue(data, Customer.class);\n        } catch (Exception e) {\n            throw new RuntimeException(\"Error deserializing Customer\", e);\n        }\n    }\n}\n\n// Uso del deserializador\nProperties props = new Properties();\nprops.put(\"key.deserializer\", \"org.apache.kafka.common.serialization.StringDeserializer\");\nprops.put(\"value.deserializer\", \"com.example.CustomerDeserializer\");\n\nConsumer<String, Customer> consumer = new KafkaConsumer<>(props);\nconsumer.subscribe(Arrays.asList(\"customers\"));\n\nConsumerRecords<String, Customer> records = consumer.poll(Duration.ofMillis(100));\nfor (ConsumerRecord<String, Customer> record : records) {\n    Customer customer = record.value();\n    System.out.println(\"Received customer: \" + customer.getName());\n}",
+              "explanation": "Implementación de deserialización personalizada para objetos Customer en Java."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaConsumer\nimport json\nfrom dataclasses import dataclass\nfrom typing import Any\n\n@dataclass\nclass Customer:\n    id: str\n    name: str\n    email: str\n\nclass CustomerDeserializer:\n    def __call__(self, value_bytes: bytes) -> Customer:\n        data = json.loads(value_bytes.decode('utf-8'))\n        return Customer(\n            id=data['id'],\n            name=data['name'],\n            email=data['email']\n        )\n\nconsumer = KafkaConsumer(\n    'customers',\n    bootstrap_servers=['localhost:9092'],\n    value_deserializer=CustomerDeserializer()\n)\n\nfor message in consumer:\n    customer = message.value\n    print(f'Received customer: {customer.name}')",
+              "explanation": "Deserialización personalizada de objetos Customer en Python."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { Kafka } = require('kafkajs')\n\nclass Customer {\n  constructor(id, name, email) {\n    this.id = id\n    this.name = name\n    this.email = email\n  }\n}\n\nclass CustomerDeserializer {\n  deserialize(messageValue) {\n    const data = JSON.parse(messageValue.toString())\n    return new Customer(data.id, data.name, data.email)\n  }\n}\n\nconst kafka = new Kafka({\n  clientId: 'customer-consumer',\n  brokers: ['localhost:9092']\n})\n\nconst consumer = kafka.consumer({ groupId: 'customer-group' })\nconst deserializer = new CustomerDeserializer()\n\nasync function consumeCustomers() {\n  await consumer.connect()\n  await consumer.subscribe({ topic: 'customers', fromBeginning: true })\n\n  await consumer.run({\n    eachMessage: async ({ topic, partition, message }) => {\n      const customer = deserializer.deserialize(message.value)\n      console.log(`Received customer: ${customer.name}`)\n    },\n  })\n}",
+              "explanation": "Deserialización personalizada de objetos Customer en JavaScript."
+            }
+          }
+        },
+        "Consumidor Multihilo": {
+          "description": "Implementación de consumidores con procesamiento paralelo",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "public class MultiThreadedConsumer {\n    private final KafkaConsumer<String, String> consumer;\n    private final ExecutorService executor;\n    private final int numThreads;\n\n    public MultiThreadedConsumer(Properties props, int numThreads) {\n        this.consumer = new KafkaConsumer<>(props);\n        this.numThreads = numThreads;\n        this.executor = Executors.newFixedThreadPool(numThreads);\n    }\n\n    public void consume(String topic) {\n        consumer.subscribe(Arrays.asList(topic));\n\n        while (true) {\n            ConsumerRecords<String, String> records = \n                consumer.poll(Duration.ofMillis(100));\n\n            if (!records.isEmpty()) {\n                // Distribuir registros entre hilos\n                CountDownLatch latch = new CountDownLatch(records.count());\n\n                records.forEach(record -> {\n                    executor.submit(() -> {\n                        try {\n                            processRecord(record);\n                        } finally {\n                            latch.countDown();\n                        }\n                    });\n                });\n\n                // Esperar que se procesen todos los registros\n                latch.await();\n                consumer.commitSync();\n            }\n        }\n    }\n\n    private void processRecord(ConsumerRecord<String, String> record) {\n        // Procesamiento del registro\n        System.out.printf(\"Thread %s procesando offset = %d%n\",\n            Thread.currentThread().getName(), record.offset());\n    }\n}",
+              "explanation": "Consumidor multihilo que procesa mensajes en paralelo usando un pool de hilos."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from concurrent.futures import ThreadPoolExecutor\nfrom kafka import KafkaConsumer\nfrom threading import Event\n\nclass MultiThreadedConsumer:\n    def __init__(self, bootstrap_servers, topic, num_threads):\n        self.consumer = KafkaConsumer(\n            topic,\n            bootstrap_servers=bootstrap_servers,\n            enable_auto_commit=False,\n            group_id='multi-thread-group'\n        )\n        self.executor = ThreadPoolExecutor(max_workers=num_threads)\n        self.stop_event = Event()\n\n    def process_record(self, record):\n        print(f'Thread {threading.current_thread().name} '\n              f'procesando offset = {record.offset}')\n\n    def consume(self):\n        try:\n            while not self.stop_event.is_set():\n                records = self.consumer.poll(timeout_ms=1000)\n                futures = []\n\n                for partition, messages in records.items():\n                    for message in messages:\n                        future = self.executor.submit(\n                            self.process_record, message)\n                        futures.append(future)\n\n                # Esperar que se completen todos los procesamientos\n                for future in futures:\n                    future.result()\n\n                self.consumer.commit()\n\n        finally:\n            self.consumer.close()\n            self.executor.shutdown()\n\n# Uso del consumidor\nconsumer = MultiThreadedConsumer(\n    ['localhost:9092'], 'test-topic', 4)\nconsumer.consume()",
+              "explanation": "Consumidor multihilo en Python usando ThreadPoolExecutor."
+            }
+          }
+        },
+        "Consumidor con Rebalanceo Personalizado": {
+          "description": "Implementación de consumidores con estrategias de rebalanceo personalizadas",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "public class CustomRebalanceListener implements ConsumerRebalanceListener {\n    private final KafkaConsumer<String, String> consumer;\n    private final Map<TopicPartition, OffsetAndMetadata> currentOffsets;\n\n    public CustomRebalanceListener(\n        KafkaConsumer<String, String> consumer,\n        Map<TopicPartition, OffsetAndMetadata> currentOffsets\n    ) {\n        this.consumer = consumer;\n        this.currentOffsets = currentOffsets;\n    }\n\n    @Override\n    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {\n        // Commit offsets for partitions we're losing\n        consumer.commitSync(currentOffsets);\n        currentOffsets.clear();\n    }\n\n    @Override\n    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {\n        // Seek to last committed offset for each partition\n        for (TopicPartition partition : partitions) {\n            consumer.seek(partition, consumer.committed(partition));\n        }\n    }\n}\n\n// Uso del listener\nKafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);\nMap<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();\n\nconsumer.subscribe(\n    Arrays.asList(\"test-topic\"),\n    new CustomRebalanceListener(consumer, currentOffsets)\n);",
+              "explanation": "Implementación de rebalanceo personalizado con manejo de offsets."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from kafka import KafkaConsumer, TopicPartition\nfrom kafka.consumer.subscription_state import ConsumerRebalanceListener\n\nclass CustomRebalanceListener(ConsumerRebalanceListener):\n    def __init__(self, consumer):\n        self.consumer = consumer\n        self.current_offsets = {}\n\n    def on_partitions_revoked(self, revoked):\n        # Commit offsets for partitions we're losing\n        if self.current_offsets:\n            self.consumer.commit(self.current_offsets)\n            self.current_offsets.clear()\n\n    def on_partitions_assigned(self, assigned):\n        # Seek to last committed offset for each partition\n        for tp in assigned:\n            committed = self.consumer.committed(tp)\n            if committed is not None:\n                self.consumer.seek(tp, committed)\n            else:\n                self.consumer.seek_to_beginning(tp)\n\n# Uso del listener\nconsumer = KafkaConsumer(\n    'test-topic',\n    bootstrap_servers=['localhost:9092'],\n    enable_auto_commit=False,\n    group_id='custom-rebalance-group'\n)\n\nlistener = CustomRebalanceListener(consumer)\nconsumer.subscribe(['test-topic'], listener=listener)",
+              "explanation": "Implementación de rebalanceo personalizado en Python."
+            }
+          }
+        }
+      }
+    },
+    "Streams": {
+      "description": "Implementaciones de procesamiento de streams",
+      "subcategories": {
+        "Stream Básico": {
+          "description": "Implementación básica de procesamiento de streams",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.streams.*;\nimport org.apache.kafka.streams.kstream.*;\nimport org.apache.kafka.common.serialization.*;\nimport java.util.Properties;\n\npublic class SimpleStream {\n    public static void main(String[] args) {\n        Properties props = new Properties();\n        props.put(StreamsConfig.APPLICATION_ID_CONFIG, \"streams-app\");\n        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, \"localhost:9092\");\n        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());\n        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());\n\n        StreamsBuilder builder = new StreamsBuilder();\n        \n        KStream<String, String> source = builder.stream(\"input-topic\");\n        source.mapValues(value -> value.toUpperCase())\n              .to(\"output-topic\");\n\n        Topology topology = builder.build();\n        KafkaStreams streams = new KafkaStreams(topology, props);\n\n        streams.start();\n\n        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));\n    }",
+              "explanation": "Procesamiento básico de streams en Java."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from confluent_kafka.streams import StreamsBuilder, KafkaStreams\nfrom confluent_kafka import StreamsConfig\n\nconfig = {\n    'bootstrap.servers': 'localhost:9092',\n    'application.id': 'streams-app'\n}\n\nbuilder = StreamsBuilder()\n\n# Crear stream desde topic\nsource = builder.stream('input-topic')\n\n# Transformar y enviar a nuevo topic\nsource.map_values(lambda value: value.upper()) \\\n      .to('output-topic')\n\n# Construir y ejecutar stream\ntopology = builder.build()\nstreams = KafkaStreams(topology, StreamsConfig(config))\n\nstreams.start()",
+              "explanation": "Procesamiento básico de streams usando confluent-kafka-python."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { KafkaStreams } = require('kafka-streams')\n\nconst config = {\n  'bootstrap.servers': 'localhost:9092',\n  'application.id': 'streams-app'\n}\n\nconst factory = new KafkaStreams(config)\nconst stream = factory.getKStream('input-topic')\n\nstream\n  .mapValues(value => value.toUpperCase())\n  .to('output-topic')\n\nstream.start()\n\nprocess.on('SIGINT', () => {\n  stream.close()\n  process.exit()\n})",
+              "explanation": "Procesamiento básico de streams usando kafka-streams-js."
+            }
+          }
+        },
+        "Stream con Ventanas": {
+          "description": "Implementación de streams con operaciones de ventana",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "import org.apache.kafka.streams.*;\nimport org.apache.kafka.streams.kstream.*;\nimport java.time.Duration;\n\npublic class WindowedStream {\n    public static void main(String[] args) {\n        StreamsBuilder builder = new StreamsBuilder();\n        \n        KStream<String, Long> source = builder.stream(\"input-topic\");\n        \n        source.groupByKey()\n              .windowedBy(TimeWindows.of(Duration.ofMinutes(5)))\n              .count()\n              .toStream()\n              .map((key, value) -> KeyValue.pair(\n                  key.key() + \"@\" + key.window().start(),\n                  value\n              ))\n              .to(\"output-topic\");\n\n        KafkaStreams streams = new KafkaStreams(builder.build(), props);\n        streams.start();\n    }",
+              "explanation": "Stream con ventanas temporales para agregación en Java."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from confluent_kafka.streams import StreamsBuilder, TimeWindows\nfrom datetime import timedelta\n\nbuilder = StreamsBuilder()\n\nsource = builder.stream('input-topic')\n\n# Agregación por ventanas de 5 minutos\nsource.group_by_key() \\\n      .window_by(TimeWindows(timedelta(minutes=5))) \\\n      .count() \\\n      .to_stream() \\\n      .to('output-topic')\n\ntopology = builder.build()\nstreams = KafkaStreams(topology, config)",
+              "explanation": "Stream con ventanas temporales usando confluent-kafka-python."
+            },
+            "javascript": {
+              "language": "JavaScript",
+              "code": "const { KafkaStreams } = require('kafka-streams')\n\nconst stream = factory.getKStream('input-topic')\n\nstream\n  .groupByKey()\n  .window({\n    size: 5 * 60 * 1000, // 5 minutos\n    step: 60 * 1000     // 1 minuto\n  })\n  .count()\n  .map(([key, value]) => ({\n    key: `${key}@${new Date().toISOString()}`,\n    value: value.toString()\n  }))\n  .to('output-topic')\n\nstream.start()",
+              "explanation": "Stream con ventanas temporales usando kafka-streams-js."
+            }
+          }
+        },
+        "Stream con Join": {
+          "description": "Implementación de streams con operaciones de join",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "StreamsBuilder builder = new StreamsBuilder();\n\n// Definir streams\nKStream<String, Order> orders = \n    builder.stream(\"orders\", Consumed.with(Serdes.String(), orderSerde));\nKTable<String, Customer> customers = \n    builder.table(\"customers\", Consumed.with(Serdes.String(), customerSerde));\n\n// Join orders con customer info\nKStream<String, EnrichedOrder> enrichedOrders = orders\n    .join(\n        customers,\n        (orderId, order, customer) -> new EnrichedOrder(order, customer),\n        Joined.with(Serdes.String(), orderSerde, customerSerde)\n    );\n\n// Procesar y enviar a nuevo topic\nenrichedOrders\n    .filter((key, order) -> order.getAmount() > 100)\n    .to(\"large-orders\", Produced.with(Serdes.String(), enrichedOrderSerde));\n\n// Construir y ejecutar la topología\nKafkaStreams streams = new KafkaStreams(builder.build(), props);",
+              "explanation": "Stream que realiza un join entre órdenes y datos de clientes."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from confluent_kafka.streams import StreamsBuilder, KStream, KTable\n\nbuilder = StreamsBuilder()\n\n# Definir streams\norders: KStream = builder.stream('orders')\ncustomers: KTable = builder.table('customers')\n\n# Join orders con customer info\nenriched_orders = orders.join(\n    customers,\n    lambda order, customer: {\n        **order,\n        'customer_name': customer['name'],\n        'customer_email': customer['email']\n    }\n)\n\n# Filtrar y enviar a nuevo topic\nenriched_orders \\\n    .filter(lambda k, v: v['amount'] > 100) \\\n    .to('large-orders')\n\n# Construir y ejecutar la topología\ntopology = builder.build()\nstreams = KafkaStreams(topology, config)",
+              "explanation": "Stream en Python que combina datos de órdenes y clientes."
+            }
+          }
+        },
+        "Stream con Agregaciones": {
+          "description": "Implementación de streams con operaciones de agregación",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "StreamsBuilder builder = new StreamsBuilder();\n\n// Stream de transacciones\nKStream<String, Transaction> transactions = \n    builder.stream(\"transactions\", \n        Consumed.with(Serdes.String(), transactionSerde));\n\n// Agregar por cliente y ventana de tiempo\ntransactions\n    .groupByKey()\n    .windowedBy(TimeWindows.of(Duration.ofMinutes(5)))\n    .aggregate(\n        () -> 0.0, // Inicializador\n        (key, transaction, total) -> total + transaction.getAmount(),\n        Materialized.with(Serdes.String(), Serdes.Double())\n    )\n    .filter((key, total) -> total > 1000)\n    .toStream()\n    .map((key, total) -> KeyValue.pair(\n        key.key(), \n        new Alert(key.key(), total, key.window().start())\n    ))\n    .to(\"high-value-alerts\", \n        Produced.with(Serdes.String(), alertSerde));\n\nKafkaStreams streams = new KafkaStreams(builder.build(), props);",
+              "explanation": "Stream que agrega transacciones por cliente y genera alertas."
+            },
+            "python": {
+              "language": "Python",
+              "code": "from confluent_kafka.streams import StreamsBuilder, TimeWindows\nfrom datetime import timedelta\n\nbuilder = StreamsBuilder()\n\n# Stream de transacciones\ntransactions = builder.stream('transactions')\n\n# Agregar por cliente y ventana de tiempo\ntransactions \\\n    .group_by_key() \\\n    .window_by(TimeWindows(timedelta(minutes=5))) \\\n    .aggregate(\n        lambda: 0.0,  # Inicializador\n        lambda key, transaction, total: \n            total + transaction['amount'],\n        'transaction-store'\n    ) \\\n    .filter(lambda k, v: v > 1000) \\\n    .to_stream() \\\n    .map(lambda k, v: (k.key, {\n        'customer_id': k.key,\n        'total': v,\n        'window_start': k.window.start\n    })) \\\n    .to('high-value-alerts')\n\ntopology = builder.build()\nstreams = KafkaStreams(topology, config)",
+              "explanation": "Stream en Python que agrega transacciones y detecta valores altos."
+            }
+          }
+        }
+      }
+    },
+    "Conectores": {
+      "description": "Implementaciones de conectores Kafka Connect",
+      "subcategories": {
+        "Source Connector": {
+          "description": "Implementación de conectores fuente personalizados",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "public class CustomSourceConnector extends SourceConnector {\n    private Map<String, String> configProps;\n\n    @Override\n    public void start(Map<String, String> props) {\n        this.configProps = props;\n    }\n\n    @Override\n    public Class<? extends Task> taskClass() {\n        return CustomSourceTask.class;\n    }\n\n    @Override\n    public List<Map<String, String>> taskConfigs(int maxTasks) {\n        List<Map<String, String>> configs = new ArrayList<>();\n        for (int i = 0; i < maxTasks; i++) {\n            configs.add(new HashMap<>(configProps));\n        }\n        return configs;\n    }\n\n    @Override\n    public ConfigDef config() {\n        return new ConfigDef()\n            .define(\"batch.size\", Type.INT, 100, Importance.HIGH,\n                \"Number of records to process in each batch\")\n            .define(\"topic\", Type.STRING, Importance.HIGH,\n                \"Topic to write the records to\");\n    }\n\n    @Override\n    public String version() {\n        return \"1.0.0\";\n    }\n\n    @Override\n    public void stop() {}\n}\n\npublic class CustomSourceTask extends SourceTask {\n    private String topic;\n    private int batchSize;\n\n    @Override\n    public void start(Map<String, String> props) {\n        topic = props.get(\"topic\");\n        batchSize = Integer.parseInt(props.get(\"batch.size\"));\n    }\n\n    @Override\n    public List<SourceRecord> poll() {\n        List<SourceRecord> records = new ArrayList<>();\n        // Lógica para obtener datos de la fuente\n        for (int i = 0; i < batchSize; i++) {\n            Map<String, Object> sourcePartition = Collections.singletonMap(\"partition\", 0);\n            Map<String, Object> sourceOffset = Collections.singletonMap(\"offset\", i);\n            records.add(new SourceRecord(\n                sourcePartition,\n                sourceOffset,\n                topic,\n                Schema.STRING_SCHEMA,\n                \"key-\" + i,\n                Schema.STRING_SCHEMA,\n                \"value-\" + i\n            ));\n        }\n        return records;\n    }\n\n    @Override\n    public String version() {\n        return \"1.0.0\";\n    }\n\n    @Override\n    public void stop() {}\n}",
+              "explanation": "Implementación de un conector fuente personalizado con su tarea asociada."
+            }
+          }
+        },
+        "Sink Connector": {
+          "description": "Implementación de conectores sumidero personalizados",
+          "examples": {
+            "java": {
+              "language": "Java",
+              "code": "public class CustomSinkConnector extends SinkConnector {\n    private Map<String, String> configProps;\n\n    @Override\n    public void start(Map<String, String> props) {\n        this.configProps = props;\n    }\n\n    @Override\n    public Class<? extends Task> taskClass() {\n        return CustomSinkTask.class;\n    }\n\n    @Override\n    public List<Map<String, String>> taskConfigs(int maxTasks) {\n        List<Map<String, String>> configs = new ArrayList<>();\n        for (int i = 0; i < maxTasks; i++) {\n            configs.add(new HashMap<>(configProps));\n        }\n        return configs;\n    }\n\n    @Override\n    public ConfigDef config() {\n        return new ConfigDef()\n            .define(\"connection.url\", Type.STRING, Importance.HIGH,\n                \"Connection URL for the sink\")\n            .define(\"batch.size\", Type.INT, 100, Importance.MEDIUM,\n                \"Number of records to process in each batch\");\n    }\n\n    @Override\n    public String version() {\n        return \"1.0.0\";\n    }\n\n    @Override\n    public void stop() {}\n}\n\npublic class CustomSinkTask extends SinkTask {\n    private String connectionUrl;\n    private int batchSize;\n\n    @Override\n    public void start(Map<String, String> props) {\n        connectionUrl = props.get(\"connection.url\");\n        batchSize = Integer.parseInt(props.get(\"batch.size\"));\n    }\n\n    @Override\n    public void put(Collection<SinkRecord> records) {\n        // Procesar registros en lotes\n        List<SinkRecord> batch = new ArrayList<>();\n        for (SinkRecord record : records) {\n            batch.add(record);\n            if (batch.size() >= batchSize) {\n                processBatch(batch);\n                batch.clear();\n            }\n        }\n        if (!batch.isEmpty()) {\n            processBatch(batch);\n        }\n    }\n\n    private void processBatch(List<SinkRecord> batch) {\n        // Lógica para escribir los registros al destino\n        for (SinkRecord record : batch) {\n            System.out.printf(\"Procesando registro: topic=%s, partition=%d, offset=%d%n\",\n                record.topic(), record.kafkaPartition(), record.kafkaOffset());\n        }\n    }\n\n    @Override\n    public String version() {\n        return \"1.0.0\";\n    }\n\n    @Override\n    public void stop() {}\n}",
+              "explanation": "Implementación de un conector sumidero personalizado con procesamiento por lotes."
+            }
+          }
+        }
+      }
+    }
+  }
+} 
