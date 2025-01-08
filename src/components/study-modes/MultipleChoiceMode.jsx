@@ -15,6 +15,7 @@ export default function MultipleChoiceMode({ certification }) {
       try {
         setIsLoading(true);
         setError(null);
+        
         const res = await fetch(`/api/questions/${certification}`);
         const data = await res.json();
 
@@ -22,16 +23,28 @@ export default function MultipleChoiceMode({ certification }) {
           throw new Error(data.message || 'Error al cargar las preguntas');
         }
 
+        // Validar la estructura de los datos
         if (!Array.isArray(data)) {
           throw new Error('Formato de datos inválido');
         }
 
-        if (data.length === 0) {
-          throw new Error('No se encontraron preguntas para esta certificación');
+        // Validar cada pregunta
+        const validQuestions = data.filter(question => 
+          question &&
+          question.content &&
+          Array.isArray(question.options) &&
+          question.options.length > 0 &&
+          typeof question.correctAnswer === 'number' &&
+          question.correctAnswer >= 0 &&
+          question.correctAnswer < question.options.length &&
+          question.answer
+        );
+
+        if (validQuestions.length === 0) {
+          throw new Error('No se encontraron preguntas válidas');
         }
 
-        // Mezclar las preguntas
-        const shuffledQuestions = [...data].sort(() => Math.random() - 0.5);
+        const shuffledQuestions = [...validQuestions].sort(() => Math.random() - 0.5);
         setQuestions(shuffledQuestions);
         setCurrentQuestionIndex(0);
         setSelectedAnswer(null);
@@ -93,8 +106,13 @@ export default function MultipleChoiceMode({ certification }) {
           <div className="text-sm text-slate-400">
             Pregunta {currentQuestionIndex + 1} de {questions.length}
           </div>
-          <div className="text-sm text-slate-400">
-            Tema: {currentQuestion.topic}
+          <div className="flex gap-4">
+            <div className="text-sm text-slate-400">
+              Tema: {currentQuestion.topic}
+            </div>
+            <div className="text-sm text-slate-400">
+              Importancia: {currentQuestion.importance}
+            </div>
           </div>
         </div>
 

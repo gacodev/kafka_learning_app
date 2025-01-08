@@ -1,0 +1,77 @@
+2025-01-08T23:09:44.992Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:09:45.006Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:09:45.028Z: Base de datos limpiada
+2025-01-08T23:09:45.031Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:09:45.031Z: Categoría extraída: Broker
+2025-01-08T23:09:45.032Z: Buscando/Creando categoría: Broker
+2025-01-08T23:09:45.035Z: Creando nueva categoría: Broker
+2025-01-08T23:09:45.042Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:09:45.044Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:09:45.046Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')
+2025-01-08T23:10:24.232Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:10:24.249Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:10:24.266Z: Base de datos limpiada
+2025-01-08T23:10:24.269Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:10:24.270Z: Categoría extraída: Broker
+2025-01-08T23:10:24.271Z: Buscando/Creando categoría: Broker
+2025-01-08T23:10:24.274Z: Creando nueva categoría: Broker
+2025-01-08T23:10:24.283Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:10:24.286Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:10:24.287Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')
+2025-01-08T23:10:39.733Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:10:39.746Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:10:39.761Z: Base de datos limpiada
+2025-01-08T23:10:39.764Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:10:39.765Z: Categoría extraída: Broker
+2025-01-08T23:10:39.766Z: Buscando/Creando categoría: Broker
+2025-01-08T23:10:39.768Z: Creando nueva categoría: Broker
+2025-01-08T23:10:39.774Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:10:39.776Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:10:39.777Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')
+2025-01-08T23:11:10.764Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:11:10.777Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:11:10.792Z: Base de datos limpiada
+2025-01-08T23:11:10.795Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:11:10.796Z: Categoría extraída: Broker
+2025-01-08T23:11:10.797Z: Buscando/Creando categoría: Broker
+2025-01-08T23:11:10.800Z: Creando nueva categoría: Broker
+2025-01-08T23:11:10.811Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:11:10.813Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:11:10.815Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')
+2025-01-08T23:11:31.592Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:11:31.604Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:11:31.618Z: Base de datos limpiada
+2025-01-08T23:11:31.620Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:11:31.621Z: Categoría extraída: Broker
+2025-01-08T23:11:31.621Z: Buscando/Creando categoría: Broker
+2025-01-08T23:11:31.624Z: Creando nueva categoría: Broker
+2025-01-08T23:11:31.631Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:11:31.632Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:11:31.634Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')
+2025-01-08T23:12:16.286Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:12:16.301Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:12:16.316Z: Base de datos limpiada
+2025-01-08T23:12:16.319Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:12:16.319Z: Categoría extraída: Broker
+2025-01-08T23:12:16.320Z: Buscando/Creando categoría: Broker
+2025-01-08T23:12:16.323Z: Creando nueva categoría: Broker
+2025-01-08T23:12:16.330Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:12:16.331Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:12:16.332Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')
+2025-01-08T23:12:38.271Z: === Inicio del Proceso de Extracción de Preguntas ===
+2025-01-08T23:12:38.284Z: Iniciando limpieza de la base de datos...
+2025-01-08T23:12:38.297Z: Base de datos limpiada
+2025-01-08T23:12:38.300Z: 
+Procesando archivo: CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:12:38.301Z: Categoría extraída: Broker
+2025-01-08T23:12:38.302Z: Buscando/Creando categoría: Broker
+2025-01-08T23:12:38.304Z: Creando nueva categoría: Broker
+2025-01-08T23:12:38.310Z: Encontradas 10 preguntas en Questions1.md
+2025-01-08T23:12:38.312Z: ADVERTENCIA: Pregunta con estructura inválida en CCDAK-Exam-Questions\Broker\Questions1.md
+2025-01-08T23:12:38.313Z: ERROR CRÍTICO: Cannot read properties of undefined (reading 'join')

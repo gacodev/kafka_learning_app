@@ -1,7 +1,7 @@
 import StudyNavigation from '@/components/StudyNavigation';
-import QuestionList from '@/components/QuestionList';
+import ConceptsMode from '@/components/study-modes/ConceptsMode';
 
-export default function Home() {
+export default function ConceptsPage() {
   return (
     <main className="min-h-screen bg-slate-900">
       <div className="container mx-auto py-8 px-4">
@@ -12,9 +12,9 @@ export default function Home() {
         <StudyNavigation />
 
         <div className="bg-slate-800 rounded-lg p-6">
-          <QuestionList />
+          <ConceptsMode certification="CCDAK" />
         </div>
       </div>
     </main>
   );
-}
+} 

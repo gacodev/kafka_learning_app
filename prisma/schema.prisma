@@ -10,30 +10,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// prisma/schema.prisma
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  questions   Question[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
 model Question {
   id            Int      @id @default(autoincrement())
+  title         String
   content       String
-  optionsJson   String   // JSON string of options array
-  correctAnswer Int      // Index of correct answer in options array
-  explanation   String?
-  topic         String?
-  subtopicsJson String?  // JSON string of subtopics array
-  category      String   // "administrator" or "developer"
-  certification String   // "Confluent Kafka Administrator" or "Confluent Kafka Developer"
-  importance    Int      @default(1)
-  answer        String?  // The correct answer text
+  optionsData   String   // Store options as JSON string
+  answer        String
+  explanation   String
+  category      String
+  categoryId    String   
+  categoryRel   Category @relation(fields: [categoryId], references: [id])
+  questionOptions Option[]  // Relation to Option model
+  qualityScore  Int      @default(0)  // Store quality score as integer
+  qualityLevel  String   @default("unknown")  // Store quality level as string
+  sourceFile    String?  // Store source file path
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
-model UserProgress {
-  id              Int      @id @default(autoincrement())
-  questionId      Int
-  lastReviewDate  DateTime
-  nextReviewDate  DateTime
-  successRate     Float
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model Option {
+  id         String   @id @default(cuid())
+  text       String   
+  isCorrect  Boolean
+  questionId Int      
+  question   Question @relation(fields: [questionId], references: [id])
+  originalIndex String?  // Store original index if available
+  confidence   String   @default("low")  // Store confidence level
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model CodeExample {

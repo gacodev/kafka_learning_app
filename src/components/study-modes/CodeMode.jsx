@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function CodeMode() {
   const [examples, setExamples] = useState(null);
-  const [selectedCertification, setSelectedCertification] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,33 +19,36 @@ export default function CodeMode() {
     async function fetchExamples() {
       try {
         setLoading(true);
+        setError(null);
+        
         const response = await fetch('/api/code-examples/all');
         if (!response.ok) {
           throw new Error('Error fetching code examples');
         }
+        
         const data = await response.json();
+        console.log('Ejemplos cargados:', data); // Para debugging
+        
+        if (Object.keys(data).length === 0) {
+          throw new Error('No se encontraron ejemplos de código');
+        }
+
         setExamples(data);
         
-        // Seleccionar primera certificación por defecto
-        const firstCertification = Object.keys(data)[0];
-        if (firstCertification) {
-          setSelectedCertification(firstCertification);
-          
-          // Seleccionar primera categoría por defecto
-          const firstCategory = Object.keys(data[firstCertification].categories)[0];
+        // Seleccionar valores iniciales
+        const firstType = Object.keys(data)[0];
+        if (firstType) {
+          setSelectedType(firstType);
+          const firstCategory = Object.keys(data[firstType].categories)[0];
           if (firstCategory) {
             setSelectedCategory(firstCategory);
-            
-            // Seleccionar primera subcategoría por defecto
             const firstSubcategory = Object.keys(
-              data[firstCertification].categories[firstCategory].subcategories
+              data[firstType].categories[firstCategory].subcategories
             )[0];
             if (firstSubcategory) {
               setSelectedSubcategory(firstSubcategory);
-              
-              // Seleccionar primer lenguaje por defecto
               const firstLanguage = Object.keys(
-                data[firstCertification].categories[firstCategory].subcategories[firstSubcategory].examples
+                data[firstType].categories[firstCategory].subcategories[firstSubcategory].examples
               )[0];
               if (firstLanguage) {
                 setSelectedLanguage(firstLanguage);
@@ -49,9 +56,20 @@ export default function CodeMode() {
             }
           }
         }
+
+        // Cargar favoritos y notas guardadas
+        const savedFavorites = localStorage.getItem('favoriteExamples');
+        if (savedFavorites) {
+          setFavorites(JSON.parse(savedFavorites));
+        }
+        
+        const savedNotes = localStorage.getItem('exampleNotes');
+        if (savedNotes) {
+          setNotes(JSON.parse(savedNotes));
+        }
       } catch (error) {
         console.error('Error fetching examples:', error);
-        setError('Error cargando los ejemplos de código');
+        setError(error.message || 'Error cargando los ejemplos de código');
       } finally {
         setLoading(false);
       }
@@ -59,6 +77,20 @@ export default function CodeMode() {
 
     fetchExamples();
   }, []);
+
+  const toggleFavorite = (exampleId) => {
+    const newFavorites = favorites.includes(exampleId)
+      ? favorites.filter(id => id !== exampleId)
+      : [...favorites, exampleId];
+    setFavorites(newFavorites);
+    localStorage.setItem('favoriteExamples', JSON.stringify(newFavorites));
+  };
+
+  const saveNote = (exampleId, note) => {
+    const newNotes = { ...notes, [exampleId]: note };
+    setNotes(newNotes);
+    localStorage.setItem('exampleNotes', JSON.stringify(newNotes));
+  };
 
   if (loading) {
     return (
@@ -76,13 +108,11 @@ export default function CodeMode() {
     );
   }
 
-  if (!examples) {
-    return null;
-  }
+  if (!examples) return null;
 
-  const currentCertification = selectedCertification ? examples[selectedCertification] : null;
-  const currentCategory = selectedCategory && currentCertification ? 
-    currentCertification.categories[selectedCategory] : null;
+  const currentType = selectedType ? examples[selectedType] : null;
+  const currentCategory = selectedCategory && currentType ? 
+    currentType.categories[selectedCategory] : null;
   const currentSubcategory = selectedSubcategory && currentCategory ? 
     currentCategory.subcategories[selectedSubcategory] : null;
   const currentExample = currentSubcategory && selectedLanguage ? 
@@ -90,32 +120,32 @@ export default function CodeMode() {
 
   return (
     <div className="space-y-6">
-      {/* Selector de certificaciones */}
+      {/* Selector de tipo (admin/developer) */}
       <div className="flex gap-4 flex-wrap">
-        {Object.entries(examples).map(([cert, content]) => (
+        {Object.entries(examples).map(([type, content]) => (
           <button
-            key={cert}
+            key={type}
             onClick={() => {
-              setSelectedCertification(cert);
+              setSelectedType(type);
               setSelectedCategory(null);
               setSelectedSubcategory(null);
               setSelectedLanguage(null);
             }}
             className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedCertification === cert
+              selectedType === type
                 ? 'bg-emerald-600 text-white'
                 : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
             }`}
           >
-            {cert && cert.charAt(0).toUpperCase() + cert.slice(1)}
+            {type.charAt(0).toUpperCase() + type.slice(1)}
           </button>
         ))}
       </div>
 
       {/* Selector de categorías */}
-      {currentCertification && (
+      {currentType && (
         <div className="flex gap-4 flex-wrap">
-          {Object.entries(currentCertification.categories).map(([category, content]) => (
+          {Object.entries(currentType.categories).map(([category, content]) => (
             <button
               key={category}
               onClick={() => {
@@ -137,7 +167,7 @@ export default function CodeMode() {
 
       {/* Descripción de la categoría */}
       {currentCategory && (
-        <p className="text-slate-300">
+        <p className="text-slate-300 bg-slate-800 p-4 rounded-lg">
           {currentCategory.description}
         </p>
       )}
@@ -164,12 +194,23 @@ export default function CodeMode() {
         </div>
       )}
 
-      {/* Contenido de la subcategoría */}
+      {/* Contenido del ejemplo */}
       {currentSubcategory && (
         <div className="bg-slate-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-slate-200 mb-2">
-            {selectedSubcategory}
-          </h3>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-semibold text-slate-200">
+              {selectedSubcategory}
+            </h3>
+            {currentExample && (
+              <button
+                onClick={() => toggleFavorite(currentExample.id)}
+                className="text-yellow-400 hover:text-yellow-300"
+              >
+                {favorites.includes(currentExample.id) ? '★' : '☆'}
+              </button>
+            )}
+          </div>
+
           <p className="text-slate-300 mb-4">
             {currentSubcategory.description}
           </p>
@@ -193,15 +234,47 @@ export default function CodeMode() {
 
           {/* Código y explicación */}
           {currentExample && (
-            <div>
-              <div className="bg-slate-800 rounded-lg p-4 mb-4">
-                <pre className="text-slate-200 overflow-x-auto">
-                  <code>{currentExample.code}</code>
-                </pre>
+            <div className="space-y-4">
+              <div className="bg-slate-800 rounded-lg overflow-hidden">
+                <div className="flex justify-between items-center px-4 py-2 bg-slate-900">
+                  <span className="text-slate-200">{currentExample.language}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(currentExample.code);
+                    }}
+                    className="text-slate-400 hover:text-slate-200"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <SyntaxHighlighter
+                  language={currentExample.language.toLowerCase()}
+                  style={oneDark}
+                  customStyle={{
+                    margin: 0,
+                    padding: '1rem',
+                    background: 'transparent'
+                  }}
+                >
+                  {currentExample.code}
+                </SyntaxHighlighter>
               </div>
+
               <div className="bg-slate-800 rounded-lg p-4">
                 <h4 className="font-semibold text-emerald-400 mb-2">Explicación:</h4>
                 <p className="text-slate-200">{currentExample.explanation}</p>
+              </div>
+
+              {/* Notas personales */}
+              <div className="bg-slate-800 rounded-lg p-4">
+                <h4 className="font-semibold text-emerald-400 mb-2">Mis Notas:</h4>
+                <textarea
+                  value={notes[currentExample.id] || ''}
+                  onChange={(e) => saveNote(currentExample.id, e.target.value)}
+                  placeholder="Añade tus notas personales aquí..."
+                  className="w-full bg-slate-900 text-slate-200 p-3 rounded-lg"
+                  rows="3"
+                />
               </div>
             </div>
           )}
