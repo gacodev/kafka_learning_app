@@ -1,18 +1,62 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
 export async function GET(request) {
+  console.log('📥 API Request recibida');
+  const prisma = new PrismaClient();
+  
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const count = parseInt(searchParams.get('count')) || 10;
+    
+    console.log('🔍 Parámetros recibidos:', { category, count });
 
-    // Obtener conceptos
-    let concepts = await prisma.concept.findMany({
-      where: category && category !== 'all' ? { categoryId: category } : {},
-      include: {
+    // Primero obtenemos las categorías
+    console.log('📚 Obteniendo categorías...');
+    
+    // Si es una petición inicial solo para categorías
+    if (count === 1 && category === 'all') {
+      const categories = await prisma.category.findMany({
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: { concepts: true }
+          }
+        }
+      });
+
+      return NextResponse.json({
+        categories: categories.filter(cat => cat._count.concepts > 0).map(cat => ({
+          id: cat.id,
+          name: cat.name
+        })),
+        flashcards: []
+      });
+    }
+
+    // Si es una petición para obtener flashcards
+    let flashcardsQuery = {};
+    
+    if (category && category !== 'all') {
+      console.log('🎯 Buscando flashcards para categoría específica:', category);
+      flashcardsQuery = {
+        where: {
+          categoryId: category
+        }
+      };
+    }
+
+    // Obtener los conceptos directamente
+    const concepts = await prisma.concept.findMany({
+      ...flashcardsQuery,
+      select: {
+        id: true,
+        term: true,
+        definition: true,
+        example: true,
+        categoryId: true,
         category: {
           select: {
             id: true,
@@ -22,36 +66,50 @@ export async function GET(request) {
       }
     });
 
-    // Mezclar aleatoriamente y limitar la cantidad
-    concepts = concepts
-      .sort(() => Math.random() - 0.5)
-      .slice(0, count);
+    console.log('📦 Conceptos encontrados:', concepts.length);
 
-    // Obtener categorías
+    // Obtener todas las categorías para el selector
     const categories = await prisma.category.findMany({
       select: {
         id: true,
         name: true,
         _count: {
-          select: {
-            concepts: true
-          }
+          select: { concepts: true }
         }
-      },
-      orderBy: {
-        name: 'asc'
       }
     });
 
+    // Mezclar y limitar la cantidad de flashcards
+    const selectedFlashcards = concepts
+      .sort(() => Math.random() - 0.5)
+      .slice(0, count)
+      .map(concept => ({
+        id: concept.id,
+        term: concept.term,
+        definition: concept.definition,
+        example: concept.example,
+        categoryId: concept.categoryId,
+        category: concept.category.name
+      }));
+
+    console.log('✨ Flashcards seleccionadas:', selectedFlashcards.length);
+
     return NextResponse.json({
-      flashcards: concepts,
-      categories: categories.filter(cat => cat._count.concepts > 0)
+      flashcards: selectedFlashcards,
+      categories: categories.filter(cat => cat._count.concepts > 0).map(cat => ({
+        id: cat.id,
+        name: cat.name
+      }))
     });
+
   } catch (error) {
-    console.error('Error al obtener flashcards:', error);
+    console.error('❌ Error en API:', error);
     return NextResponse.json(
       { error: 'Error al obtener las flashcards' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
+    console.log('🔌 Conexión a Prisma cerrada');
   }
 } 

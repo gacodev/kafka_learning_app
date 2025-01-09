@@ -1,46 +1,94 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import LoadingSpinner from '../LoadingSpinner';
 
 export default function FlashcardsMode() {
   const [flashcards, setFlashcards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [categories, setCategories] = useState([]);
   const [cardsCount, setCardsCount] = useState(10);
   const [showSettings, setShowSettings] = useState(true);
+  
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchFlashcards = async () => {
+    const loadCategories = async () => {
       try {
-        setLoading(true);
-        const category = searchParams.get('category') || 'all';
-        const response = await fetch(
-          `/api/flashcards?category=${category}&count=${cardsCount}`
-        );
-        if (!response.ok) throw new Error('Error al cargar las tarjetas');
+        console.log('🔄 Cargando categorías iniciales...');
+        const response = await fetch('/api/flashcards?category=all&count=1');
+        if (!response.ok) throw new Error('Error al cargar categorías');
         const data = await response.json();
-        setFlashcards(data.flashcards || []);
-        setCategories(data.categories || []);
-        setSelectedCategory(category);
-        setShowSettings(data.flashcards?.length === 0);
+        console.log('📚 Categorías cargadas:', data.categories);
+        setCategories(data.categories);
       } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error('❌ Error cargando categorías:', err);
+        setError('Error al cargar las categorías');
       }
     };
 
-    if (!showSettings) {
-      fetchFlashcards();
+    loadCategories();
+  }, []);
+
+  const fetchFlashcards = useCallback(async (category, count) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔍 Iniciando fetch de flashcards:', { category, count });
+      
+      const response = await fetch(
+        `/api/flashcards?category=${category}&count=${count}`
+      );
+      
+      console.log('📡 Estado de la respuesta:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('📦 Datos recibidos:', data);
+      
+      if (!data.flashcards || data.flashcards.length === 0) {
+        console.log('⚠️ No se encontraron flashcards');
+        setShowSettings(true);
+        throw new Error('No se encontraron tarjetas para esta categoría');
+      }
+
+      console.log('✅ Flashcards cargadas exitosamente:', data.flashcards.length);
+      setFlashcards(data.flashcards);
+      setCategories(data.categories);
+      setCurrentIndex(0);
+      setIsFlipped(false);
+      setShowSettings(false);
+    } catch (err) {
+      console.error('❌ Error en fetchFlashcards:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [searchParams, cardsCount, showSettings]);
+  }, []);
+
+  useEffect(() => {
+    const category = searchParams.get('category') || 'all';
+    setSelectedCategory(category);
+    
+    if (!showSettings) {
+      fetchFlashcards(category, cardsCount);
+    }
+  }, [searchParams, cardsCount, showSettings, fetchFlashcards]);
+
+  const handleStartStudy = async () => {
+    await fetchFlashcards(selectedCategory, cardsCount);
+    router.push(`/flashcards?category=${selectedCategory}`);
+  };
 
   const handleNext = () => {
     if (currentIndex < flashcards.length - 1) {
@@ -60,10 +108,6 @@ export default function FlashcardsMode() {
     setShowSettings(true);
     setCurrentIndex(0);
     setIsFlipped(false);
-  };
-
-  const handleStartStudy = () => {
-    setShowSettings(false);
   };
 
   if (loading) return <LoadingSpinner />;
