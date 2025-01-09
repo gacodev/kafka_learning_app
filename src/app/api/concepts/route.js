@@ -6,44 +6,49 @@ const prisma = new PrismaClient();
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
+    const page = parseInt(searchParams.get('page')) || 1;
+    const limit = parseInt(searchParams.get('limit')) || 10;
+    const search = searchParams.get('search') || '';
+    
+    const skip = (page - 1) * limit;
 
-    // Obtener conceptos
+    // Consulta base
+    let where = {};
+    
+    // Agregar filtro de búsqueda si existe
+    if (search.trim()) {
+      where = {
+        OR: [
+          { term: { contains: search } },
+          { definition: { contains: search } }
+        ]
+      };
+    }
+
     const concepts = await prisma.concept.findMany({
-      where: category ? { categoryId: category } : {},
+      where,
       include: {
-        category: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+        category: true
       },
       orderBy: {
         term: 'asc'
-      }
+      },
+      skip,
+      take: limit
     });
 
-    // Obtener categorías
-    const categories = await prisma.category.findMany({
-      select: {
-        id: true,
-        name: true,
-        _count: {
-          select: {
-            concepts: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
+    const total = await prisma.concept.count({ where });
 
     return NextResponse.json({
       concepts,
-      categories: categories.filter(cat => cat._count.concepts > 0)
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        currentPage: page,
+        perPage: limit
+      }
     });
+
   } catch (error) {
     console.error('Error al obtener conceptos:', error);
     return NextResponse.json(
