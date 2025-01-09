@@ -1,4 +1,4 @@
-## Question 1: Viewing Kafka Topic Configuration
+## Question
 
 **Question:**  
 How can you view the current configuration of a Kafka topic?
@@ -30,7 +30,7 @@ It retrieves and displays the configuration properties for the specified topic, 
 
 **Option D**: Topic configurations are not stored in the Kafka broker's log files. These files contain runtime logs, not configuration data.
 
-## Question 2
+## Question
 
 What is the default behavior of the `kafka-console-consumer` when no consumer group is specified?
 
@@ -54,7 +54,7 @@ Statement C is incorrect because the tool does not fail with an error when no co
 
 Statement D is incorrect because the `kafka-console-consumer` always joins a consumer group, even if it's a newly created one with a generated name. It does not consume messages without being part of a group.
 
-## Question 3
+## Question
 
 How does the `kafka-console-consumer` behave when you specify the `--from-beginning` option?
 
@@ -80,7 +80,7 @@ Statement C is incorrect because the `--from-beginning` option does not allow yo
 
 Statement D is incorrect because the `--from-beginning` option does not start consuming from a random offset. It deterministically starts from the earliest offset in each assigned partition.
 
-## Question 4
+## Question
 
 What happens when you run multiple instances of the `kafka-console-consumer` with the same consumer group?
 
@@ -111,7 +111,7 @@ Statement C is incorrect because the instances do not compete for messages. Each
 
 Statement D is incorrect because the instances do not consume messages in a round-robin fashion. Each instance is assigned specific partitions and consumes messages only from those partitions.
 
-## Question 5
+## Question
 
 How can you create a topic named "test" with 3 partitions and a replication factor of 2 using the Kafka CLI?
 
@@ -125,7 +125,7 @@ How can you create a topic named "test" with 3 partitions and a replication fact
 **Explanation:**
 To create a topic using the Kafka CLI, you should use the `kafka-topics.sh` command with the `--create` option. The `--bootstrap-server` option is used to specify the Kafka broker(s) to connect to, while `--zookeeper` is deprecated. The `--partitions` and `--replication-factor` options are used to set the desired number of partitions and replication factor for the topic.
 
-## Question 6
+## Question
 
 Which command can you use to list all the topics in a Kafka cluster?
 
@@ -139,7 +139,7 @@ Which command can you use to list all the topics in a Kafka cluster?
 **Explanation:**
 To list all the topics in a Kafka cluster, you should use the `kafka-topics.sh` command with the `--list` option. The `--bootstrap-server` option is used to specify the Kafka broker(s) to connect to. The `--zookeeper` option is deprecated in newer versions of Kafka.
 
-## Question 7
+## Question
 
 **Question:**  
 How can you describe the configuration of a topic named "test" using the Kafka CLI?
@@ -166,7 +166,7 @@ To describe the configuration of a topic, you should use the `kafka-configs.sh` 
 
 **Option C**: This uses the correct tool (`kafka-configs.sh`) but with the deprecated `--zookeeper` option, which should not be used in current Kafka versions.
 
-## Question 8
+## Question
 
 Which Kafka CLI command is used to produce messages to a topic?
 

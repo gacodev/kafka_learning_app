@@ -10,32 +10,51 @@ export default function StudyNavigation() {
     {
       id: 'practice',
       name: 'Práctica',
-      description: 'Practica con preguntas de examen',
+      description: 'Preguntas de opción múltiple',
       path: '/'
     },
     {
       id: 'concepts',
       name: 'Conceptos',
-      description: 'Aprende conceptos clave',
+      description: 'Definiciones y ejemplos',
       path: '/concepts'
     },
     {
       id: 'code',
-      name: 'Ejemplos de Código',
-      description: 'Explora ejemplos prácticos',
+      name: 'Código',
+      description: 'Ejemplos prácticos',
       path: '/code'
     },
     {
       id: 'flashcards',
-      name: 'Flashcards',
-      description: 'Repasa con tarjetas de memoria',
+      name: 'Tarjetas',
+      description: 'Repaso espaciado',
       path: '/flashcards'
     }
   ];
 
   return (
     <nav className="bg-slate-800 p-4 mb-8 rounded-lg">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Versión móvil */}
+      <div className="grid grid-cols-2 gap-2 md:hidden">
+        {modes.map((mode) => (
+          <button
+            key={mode.id}
+            onClick={() => router.push(mode.path)}
+            className={`p-3 rounded-lg transition-all text-center ${
+              pathname === mode.path
+                ? 'bg-emerald-600 text-white'
+                : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+            }`}
+          >
+            <h3 className="font-semibold text-sm">{mode.name}</h3>
+            <p className="text-xs opacity-80 hidden sm:block">{mode.description}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Versión escritorio */}
+      <div className="hidden md:grid md:grid-cols-4 gap-4">
         {modes.map((mode) => (
           <button
             key={mode.id}

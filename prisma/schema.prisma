@@ -17,6 +17,7 @@ model Category {
   name        String     @unique
   description String?
   questions   Question[]
+  concepts    Concept[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -28,15 +29,27 @@ model Question {
   optionsData   String   // Store options as JSON string
   answer        String
   explanation   String
+  type          String   @default("multiple_choice") // multiple_choice o concept
   category      String
   categoryId    String   
   categoryRel   Category @relation(fields: [categoryId], references: [id])
-  questionOptions Option[]  // Relation to Option model
-  qualityScore  Int      @default(0)  // Store quality score as integer
-  qualityLevel  String   @default("unknown")  // Store quality level as string
-  sourceFile    String?  // Store source file path
+  questionOptions Option[]
+  qualityScore  Int      @default(0)
+  qualityLevel  String   @default("unknown")
+  sourceFile    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Concept {
+  id          String   @id @default(cuid())
+  term        String
+  definition  String
+  example     String?
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Option {
@@ -45,8 +58,8 @@ model Option {
   isCorrect  Boolean
   questionId Int      
   question   Question @relation(fields: [questionId], references: [id])
-  originalIndex String?  // Store original index if available
-  confidence   String   @default("low")  // Store confidence level
+  originalIndex String?
+  confidence   String   @default("low")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -55,11 +68,11 @@ model CodeExample {
   id            String   @id @default(cuid())
   type          String   // 'admin' o 'developer'
   certification String   // 'CCDAK' o 'CCAK'
-  category      String   // Nombre de la categoría principal
-  subcategory   String   // Nombre de la subcategoría
-  language      String   // Lenguaje del ejemplo
-  code          String   // Código del ejemplo
-  explanation   String   // Explicación del ejemplo
+  category      String
+  subcategory   String
+  language      String
+  code          String
+  explanation   String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
