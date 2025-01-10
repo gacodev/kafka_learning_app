@@ -1,10 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import axios from 'axios';
+import 'dotenv/config';
 
 // Constantes
-const HUGGINGFACE_API = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
-const HF_TOKEN = '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';
+const HUGGINGFACE_API = process.env.HUGGINGFACE_API;
+const HF_TOKEN = process.env.HF_TOKEN;
 
 // Lista de todas las categorías
 export const CATEGORIES = [
