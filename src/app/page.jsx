@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import StudyNavigation from '@/components/StudyNavigation';
 import QuestionList from '@/components/QuestionList';
 
@@ -9,10 +10,14 @@ export default function Home() {
           Preparación CCDAK
         </h1>
         
-        <StudyNavigation />
+        <Suspense fallback={<div>Cargando...</div>}>
+          <StudyNavigation />
+        </Suspense>
 
         <div className="bg-slate-800 rounded-lg p-6">
-          <QuestionList />
+          <Suspense fallback={<div>Cargando preguntas...</div>}>
+            <QuestionList />
+          </Suspense>
         </div>
       </div>
     </main>

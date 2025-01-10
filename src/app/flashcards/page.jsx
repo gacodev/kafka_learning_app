@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import StudyNavigation from '@/components/StudyNavigation';
 import FlashcardsMode from '@/components/study-modes/FlashcardsMode';
 
@@ -9,10 +10,14 @@ export default function FlashcardsPage() {
           Preparación CCDAK
         </h1>
         
-        <StudyNavigation />
+        <Suspense fallback={<div>Cargando...</div>}>
+          <StudyNavigation />
+        </Suspense>
 
         <div className="bg-slate-800 rounded-lg p-6">
-          <FlashcardsMode />
+          <Suspense fallback={<div>Cargando tarjetas...</div>}>
+            <FlashcardsMode />
+          </Suspense>
         </div>
       </div>
     </main>
